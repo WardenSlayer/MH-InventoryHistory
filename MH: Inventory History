@@ -2,12 +2,15 @@
 // @name         MH: Inventry History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.1
+// @version      0.2
 // @description  Coming Soon
 // @include      https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // @include      http://www.mousehuntgame.com/*
 // @include      https://www.mousehuntgame.com/*
-// @grant GM_setClipboard
+// @grant        GM_setClipboard
+// @grant        GM_xmlhttpRequest
+// @connect      self
+// @connect      script.google.com
 // ==/UserScript==
 $(document).ready(function() {
     addTouchPoint()
@@ -58,43 +61,20 @@ function fetchInventory() {
     return itemsArray
 }
 
-
-//unsure here!!!!!!!!!!!!!!,
-//version A
-function publishResults123(results) {
-    var xhr = new XMLHttpRequest();
-    xhr.open("POST", "https://script.google.com/macros/s/AKfycbyQI3g4_hMLfUdhmz00P1cKZtyk4YKVI-TAUn_OtFiY8LtS5nFuCNjH7A/exec", true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify({
-        data: 1234
-    }));
-}
-//version B
-function publishResults(results) {
-    console.log(results)
+function publishResults(results){
     const debug = localStorage.getItem('ws.debug');
-    if (debug == true) {
-        console.log('Atempting to submit data')
-        results = 'here,1,2,3,4';
-    }
-    const url = 'https://script.google.com/macros/s/AKfycbyQI3g4_hMLfUdhmz00P1cKZtyk4YKVI-TAUn_OtFiY8LtS5nFuCNjH7A/exec';
-    const form = new submitData(results)
-    const jqxhr = $.ajax({
-        url: url,
+    //console.log(results)
+    GM_xmlhttpRequest({
         method: "POST",
-        dataType: "json",
-        data: form,
-    }).success(function() {
-        // do something
-        console.log('Inventory Submitted!',results)
+        url: 'https://script.google.com/macros/s/AKfycbyQI3g4_hMLfUdhmz00P1cKZtyk4YKVI-TAUn_OtFiY8LtS5nFuCNjH7A/exec',
+        data: results,
+        onload: function(response) {
+            if (debug == true) {
+                console.log('Inventory Submitted')
+            }
+        }
     });
 }
-
-function submitData(result_string) {
-    this.The_String_From_The_Script = {data: 13571113};
-}
-
-
 
 
 
