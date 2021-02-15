@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.3
+// @version      0.4
 // @description  Coming Soon
 // @include      https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // @include      http://www.mousehuntgame.com/*
@@ -11,6 +11,7 @@
 // @grant        GM_xmlhttpRequest
 // @connect      self
 // @connect      script.google.com
+//
 // ==/UserScript==
 $(document).ready(function() {
     addTouchPoint()
