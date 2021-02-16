@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.6
+// @version      0.7
 // @description  Coming Soon
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
@@ -15,6 +15,7 @@
 // @grant        GM_getResourceText
 // @connect      self
 // @connect      script.google.com
+// @connect      script.googleusercontent.com
 //
 // ==/UserScript==
 $(document).ready(function() {
@@ -60,7 +61,7 @@ function fetchInventory() {
             itemsArray[index] = [arrayItem.name,arrayItem.quantity];
         })
         //hunter stats
-        itemsArray.push(['Rank',user.title_name],['Rank Percent',user.title_percent_accurate],['Wisdom',user.title_wisdom],['Points',user.points],['Gold',user.gold]);
+        itemsArray.push(['Rank Percent',user.title_percent_accurate],['Wisdom',user.title_wisdom],['Points',user.points],['Gold',user.gold]);
         getHunts(itemsArray);
     })
     return itemsArray
@@ -81,8 +82,6 @@ function getHunts(itemsArray) {
         }
         const numHunts = ['Total Hunts',data[0].num_total_turns];
         itemsArray.push(numHorns,numTrapChecks,numFriendHorns,numHunts,numClues,numDust)
-        //format to CSV?
-        //localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray.map(e => e.join("\u0001F443")).join("\u0001F443")))
         localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray));
     })
     return itemsArray
@@ -91,6 +90,9 @@ function getHunts(itemsArray) {
 function publishResults(results){
     const debug = localStorage.getItem('ws.debug');
     const webAppURL = localStorage.getItem('ws.mh.invHx.webApp');
+    let timestamp_label = "";
+    //dummy label for now
+    timestamp_label = new Date().split('G')[0];
     if (webAppURL){
         if (debug == true) {
             console.log(webAppURL)
@@ -98,7 +100,7 @@ function publishResults(results){
         GM_xmlhttpRequest({
             method: "POST",
             url: webAppURL,
-            data: results,
+            data: { inventory: results, timestamp: timestamp_label},
             onload: function(response) {
                 if (debug == true) {
                     console.log('Inventory Submitted')
@@ -116,6 +118,7 @@ function publishResults(results){
 }
 
 //========== Modals ======================//
+//https://craftpip.github.io/jquery-confirm/#getting-started
 function onInvHXOnClick(){
     $.confirm({
         title: 'MH: Inventory History',
