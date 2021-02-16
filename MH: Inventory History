@@ -2,13 +2,17 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.4
+// @version      0.6
 // @description  Coming Soon
+// @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
+// @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
+// @require      https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js
 // @include      https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js
 // @include      http://www.mousehuntgame.com/*
 // @include      https://www.mousehuntgame.com/*
 // @grant        GM_setClipboard
 // @grant        GM_xmlhttpRequest
+// @grant        GM_getResourceText
 // @connect      self
 // @connect      script.google.com
 //
@@ -28,7 +32,7 @@ function addTouchPoint() {
         invHixBtn.href = "#";
         invHixBtn.innerText = "Inventory History";
         invHixBtn.onclick = function () {
-            getInvNow();
+            onInvHXOnClick();
         };
         const icon = document.createElement("div");
         icon.className = "icon";
@@ -39,42 +43,140 @@ function addTouchPoint() {
 }
 
 function getInvNow() {
-    let userInv = [];
-    userInv[0] = Date().toString().split(' G')[0];
+    const debug = localStorage.getItem('ws.debug');
     fetchInventory();
-    userInv[1] = localStorage.getItem('ws.mh.invHx');
-    //GM_setClipboard(userInv);
-    publishResults(userInv)
+    if (debug == true) {
+            console.log('Inventory',localStorage.getItem('ws.mh.invHx'))
+        }
+    publishResults(localStorage.getItem('ws.mh.invHx'));
 }
 
 function fetchInventory() {
     const itemsToGet = ['weapon','base', 'trinket', 'bait', 'skin', 'crafting_item','convertible', 'potion', 'stat','collectible']; //future proof this to allow for exclusions
     let itemsArray = [];
-    let finalCSV = "";hg.utils.UserInventory.getItemsByClass(itemsToGet,true,function(data) {
+    let finalCSV = "";
+    hg.utils.UserInventory.getItemsByClass(itemsToGet,true,function(data) {
         data.forEach(function(arrayItem, index) {
             itemsArray[index] = [arrayItem.name,arrayItem.quantity];
         })
         //hunter stats
         itemsArray.push(['Rank',user.title_name],['Rank Percent',user.title_percent_accurate],['Wisdom',user.title_wisdom],['Points',user.points],['Gold',user.gold]);
-        //format to CSV
-        localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray.map(e => e.join("\u0001F443")).join("\u0001F443")))
+        getHunts(itemsArray);
+    })
+    return itemsArray
+}
+
+function getHunts(itemsArray) {
+    let hunts = [];
+    hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_linked_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted'],function(data) {
+        const numClues = ['Map Clues',data[0].map_num_clues_found];
+        const numDust = ['Maps Dusted',data[0].map_num_maps_dusted];
+        const numHorns = ['Horn Calls',data[0].num_active_turns];
+        const numTrapChecks = ['Trap Checks',data[0].num_passive_turns];
+        let numFriendHorns = [];
+        if(data[0].num_link_turns) {
+            numFriendHorns = ['Friend Horn',data[0].num_link_turns];
+        } else {
+            numFriendHorns = ['Friend Horn',data[0].num_total_turns-data[0].num_active_turns-data[0].num_passive_turns];
+        }
+        const numHunts = ['Total Hunts',data[0].num_total_turns];
+        itemsArray.push(numHorns,numTrapChecks,numFriendHorns,numHunts,numClues,numDust)
+        //format to CSV?
+        //localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray.map(e => e.join("\u0001F443")).join("\u0001F443")))
+        localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray));
     })
     return itemsArray
 }
 
 function publishResults(results){
     const debug = localStorage.getItem('ws.debug');
-    //console.log(results)
-    GM_xmlhttpRequest({
-        method: "POST",
-        url: 'https://script.google.com/macros/s/AKfycbyQI3g4_hMLfUdhmz00P1cKZtyk4YKVI-TAUn_OtFiY8LtS5nFuCNjH7A/exec',
-        data: results,
-        onload: function(response) {
-            if (debug == true) {
-                console.log('Inventory Submitted')
-            }
+    const webAppURL = localStorage.getItem('ws.mh.invHx.webApp');
+    if (webAppURL){
+        if (debug == true) {
+            console.log(webAppURL)
         }
-    });
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: webAppURL,
+            data: results,
+            onload: function(response) {
+                if (debug == true) {
+                    console.log('Inventory Submitted')
+                }
+            },
+            onerror: function(response) {
+                if (debug == true) {
+                    console.log('No Good, Error')
+                }
+            }
+        });
+    } else {
+        myAlert();
+    }
+}
+
+//========== Modals ======================//
+function onInvHXOnClick(){
+    $.confirm({
+        title: 'MH: Inventory History',
+        content: 'Provide your web app link here. Only needed the first time unless you need to update it.' +
+        '<form action="" class="formName">' +
+        '<div class="form-group">' +
+        '<input type="text" placeholder="Paste Web App Link Here" class="webapp link" size="100" "/>' +
+        '</div>' +
+        '</form>',
+        boxWidth: '50%',
+        useBootstrap: false,
+        closeIcon: true,
+        icon: 'fas fa-history',
+        draggable: true,
+        theme: 'dark',
+        buttons: {
+            formSubmit: {
+                text: 'Submit Inventory',
+                btnClass: 'btn-blue',
+                action: function () {
+                    const link = this.$content.find('.webapp.link').val();
+                    if (link) {
+                        localStorage.setItem('ws.mh.invHx.webApp',link)
+                        getInvNow();
+                    } else if (localStorage.getItem('ws.mh.invHx.webApp')) {
+                        getInvNow();
+                    } else {
+                        myAlert();
+                    }
+                }
+            },
+            cancel: function () {
+            },
+        },
+    })
+}
+
+function myAlert() {
+    var icon = 'fas fa-exclamation-circle'
+    var title = "WebApp Link Error"
+    $.alert({
+        autoClose: 'acknowledge|60000',
+        title: title,
+        content: 'There was an issue with your web app link. Please paste it in again',
+        icon: icon,
+        type: 'dark',
+        typeAnimated: true,
+        boxWidth: '30%',
+        useBootstrap: false,
+        draggable: true,
+        escapeKey: 'aknowledge',
+        buttons: {
+            acknowledge: {
+                text: 'Ok',
+                keys: ['enter', 'space'],
+                btnClass: 'btn-red',
+                action: function() {
+                }
+            },
+        }
+    })
 }
 
 
@@ -82,128 +184,3 @@ function publishResults(results){
 
 
 
-//Unsused, here for record only
-//===================================================================================================================
-// function getHunterStats() {
-//     let hunterStats = {};
-//     hunterStats.points = user.points;
-//     hunterStats.gold = user.gold;
-//     hunterStats.wisdom = user.title_wisdom;
-//     hunterStats.rank = user.title_name;
-//     hunterStats.rankPercent = user.title_percent_accurate;
-//     return hunterStats
-// }
-
-// function getHunts() {
-//     let hunts = {};
-//     hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_linked_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted'],function(data) {
-//         hunts.hornCalls = data[0].num_active_turns;
-//         hunts.trapChecks = data[0].num_passive_turns;
-//         hunts.friendHunts = data[0].num_link_turns;
-//         hunts.totalHunts = data[0].num_total_turns;
-//         hunts.clues = data[0].map_num_clues_found;
-//         hunts.dusts = data[0].map_num_maps_dusted;
-//     })
-//     return hunts
-// }
-
-// function getWeapons() {
-//     let weaponArray = [];
-//     hg.utils.UserInventory.getItemsByClass('weapon',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             weaponArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return weaponArray
-// }
-
-// function getBases() {
-//     let baseArray = [];
-//     hg.utils.UserInventory.getItemsByClass('base',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             baseArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return baseArray
-// }
-
-
-// function getCheese() {
-//     let cheeseArray = [];
-//     hg.utils.UserInventory.getItemsByClass('bait',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             cheeseArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return cheeseArray
-// }
-
-// function getCharms() {
-//     let charmArray = [];
-//     hg.utils.UserInventory.getItemsByClass('trinket',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             charmArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return charmArray
-// }
-
-// function getSkins() {
-//     let skinArray = [];
-//     hg.utils.UserInventory.getItemsByClass('skin',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             skinArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return skinArray
-// }
-
-// function getCraftingItems() {
-//     let craftingArray = [];
-//     hg.utils.UserInventory.getItemsByClass('crafting_item',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             craftingArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return craftingArray
-// }
-
-// function getConvertibles() {
-//     let convertibleArray = [];
-//     hg.utils.UserInventory.getItemsByClass('convertible',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             convertibleArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return convertibleArray
-// }
-
-// function getPotions() {
-//     let potionArray = [];
-//     hg.utils.UserInventory.getItemsByClass('potion',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             potionArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return potionArray
-// }
-
-// function getStatItems() {
-//     let statItemArray = [];
-//     hg.utils.UserInventory.getItemsByClass('stat',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             statItemArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return statItemArray
-// }
-
-// function getCollectibles() {
-//     let collectibleArray = [];
-//     hg.utils.UserInventory.getItemsByClass('collectible',true,function(data) {
-//         data.forEach(function(arrayItem, index) {
-//             collectibleArray[index] = [arrayItem.name,arrayItem.quantity]
-//         })
-//     })
-//     return collectibleArray
-// }
