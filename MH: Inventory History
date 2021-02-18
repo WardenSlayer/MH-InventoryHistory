@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.9
+// @version      0.91
 // @description  Coming Soon
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
@@ -44,12 +44,9 @@ function addTouchPoint() {
 }
 
 function getInvNow() {
-    const debug = localStorage.getItem('ws.debug');
     fetchInventory();
-    if (debug == true) {
-        console.log('Inventory',localStorage.getItem('ws.mh.invHx'))
-    }
-    publishResults(localStorage.getItem('ws.mh.invHx'));
+    getMice();
+    publishResults();
 }
 
 function fetchInventory() {
@@ -99,17 +96,57 @@ function getCrowns (itemsArray) {
             }
             itemsArray.push([crownName,arrayItem.count]);
         })
-        localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray));
+        localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray))
     })
     return itemsArray
 }
 
-function publishResults(results){
+function getMice() {
+    let mouseArray = [];
+    hg.utils.MouseUtil.getHuntingStats(function(data) {
+        data.forEach(function(arrayItem, index) {
+            const mouseName = correctMouseName(arrayItem.name);
+            mouseArray[index] = [mouseName, arrayItem.num_catches, arrayItem.num_misses];
+        })
+        localStorage.setItem('ws.mh.invHx.mice', JSON.stringify(mouseArray));
+    })
+    return mouseArray
+}
+
+function correctMouseName(mouseName) {
+    mouseName = mouseName.replace(" Mouse", "");
+    let newMouseName = "";
+    if (mouseName == "Ful'Mina, The Mountain Queen") {
+        newMouseName = "Ful'mina the Mountain Queen";
+    } else if (mouseName == "Inferna, The Engulfed") {
+        newMouseName = "Inferna the Engulfed";
+    } else if (mouseName == "Nachous, The Molten") {
+        newMouseName = "Nachous the Molten";
+    } else if (mouseName == "Stormsurge, the Vile Tempest") {
+        newMouseName = "Stormsurge the Vile Tempest";
+    } else if (mouseName == "Bruticus, the Blazing") {
+        newMouseName = "Bruticus the Blazing";
+    } else if (mouseName == "Vincent, The Magnificent") {
+        newMouseName = "Vincent The Magnificent";
+    } else if (mouseName == "Corky, the Collector") {
+        newMouseName = "Corky the Collector";
+    } else {
+        newMouseName = mouseName;
+    }
+    return newMouseName;
+}
+
+
+function publishResults(){
     const debug = localStorage.getItem('ws.debug');
     const webAppURL = localStorage.getItem('ws.mh.invHx.webApp');
     let timestamp_label = localStorage.getItem('ws.mh.invHx.dataLabel');
-    const mouseArray = [['Mobster',Math.floor(Math.random() * 100),5],['Warmonger', 2500,Math.floor(Math.random()*10000)],['Lost Legionaire',1,0]];
-    console.log(mouseArray)
+    const itemArray = localStorage.getItem('ws.mh.invHx');
+    const mouseArray = localStorage.getItem('ws.mh.invHx.mice');
+    if (debug == true) {
+        console.log('Inventory',itemArray)
+        console.log('Mice',mouseArray)
+    }
     if (timestamp_label) {
     } else {
         timestamp_label = new Date().toString().split(" G")[0];
@@ -121,7 +158,7 @@ function publishResults(results){
         GM_xmlhttpRequest({
             method: "POST",
             url: webAppURL,
-            data: JSON.stringify({ inventory: results, timestamp: timestamp_label,mice: mouseArray}),
+            data: JSON.stringify({ inventory: itemArray, timestamp: timestamp_label,mice: mouseArray}),
             onload: function(response) {
                 if (debug == true) {
                     console.log('Inventory Submitted')
