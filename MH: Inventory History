@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.8
+// @version      0.9
 // @description  Coming Soon
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
@@ -47,8 +47,8 @@ function getInvNow() {
     const debug = localStorage.getItem('ws.debug');
     fetchInventory();
     if (debug == true) {
-            console.log('Inventory',localStorage.getItem('ws.mh.invHx'))
-        }
+        console.log('Inventory',localStorage.getItem('ws.mh.invHx'))
+    }
     publishResults(localStorage.getItem('ws.mh.invHx'));
 }
 
@@ -61,7 +61,7 @@ function fetchInventory() {
             itemsArray[index] = [arrayItem.name,arrayItem.quantity];
         })
         //hunter stats
-        itemsArray.push(['Rank Percent',user.title_percent_accurate],['Wisdom',user.title_wisdom],['Points',user.points],['Gold',user.gold]);
+        itemsArray.push(['Rank Percent',user.title_percent_accurate],['Points',user.points],['Gold',user.gold]);
         getHunts(itemsArray);
     })
     return itemsArray
@@ -69,11 +69,12 @@ function fetchInventory() {
 
 function getHunts(itemsArray) {
     let hunts = [];
-    hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_linked_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted'],function(data) {
+    hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_link_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted','wisdom'],function(data) {
         const numClues = ['Map Clues',data[0].map_num_clues_found];
         const numDust = ['Maps Dusted',data[0].map_num_maps_dusted];
         const numHorns = ['Horn Calls',data[0].num_active_turns];
         const numTrapChecks = ['Trap Checks',data[0].num_passive_turns];
+        const wisdom = ['Wisdom',data[0].wisdom];
         let numFriendHorns = [];
         if(data[0].num_link_turns) {
             numFriendHorns = ['Friend Horn',data[0].num_link_turns];
@@ -81,7 +82,23 @@ function getHunts(itemsArray) {
             numFriendHorns = ['Friend Horn',data[0].num_total_turns-data[0].num_active_turns-data[0].num_passive_turns];
         }
         const numHunts = ['Total Hunts',data[0].num_total_turns];
-        itemsArray.push(numHorns,numTrapChecks,numFriendHorns,numHunts,numClues,numDust)
+        itemsArray.push(numHorns,numTrapChecks,numFriendHorns,numHunts,numClues,numDust,wisdom);
+        getCrowns(itemsArray);
+    })
+    return itemsArray
+}
+
+function getCrowns (itemsArray) {
+    hg.utils.MouseUtil.getCrowns(function(data) {
+        data.forEach(function(arrayItem, i) {
+            let crownName = arrayItem.name;
+            if (arrayItem.type == "none") {
+                crownName = 'Uncrowned Mice';
+            } else {
+                crownName = crownName.concat(' Crowns');
+            }
+            itemsArray.push([crownName,arrayItem.count]);
+        })
         localStorage.setItem('ws.mh.invHx', JSON.stringify(itemsArray));
     })
     return itemsArray
@@ -90,9 +107,13 @@ function getHunts(itemsArray) {
 function publishResults(results){
     const debug = localStorage.getItem('ws.debug');
     const webAppURL = localStorage.getItem('ws.mh.invHx.webApp');
-    let timestamp_label = "";
-    //dummy label for now
-    timestamp_label = new Date().toString().split(" G")[0];
+    let timestamp_label = localStorage.getItem('ws.mh.invHx.dataLabel');
+    const mouseArray = [['Mobster',Math.floor(Math.random() * 100),5],['Warmonger', 2500,Math.floor(Math.random()*10000)],['Lost Legionaire',1,0]];
+    console.log(mouseArray)
+    if (timestamp_label) {
+    } else {
+        timestamp_label = new Date().toString().split(" G")[0];
+    }
     if (webAppURL){
         if (debug == true) {
             console.log(webAppURL)
@@ -100,11 +121,12 @@ function publishResults(results){
         GM_xmlhttpRequest({
             method: "POST",
             url: webAppURL,
-            data: JSON.stringify({ inventory: results, timestamp: timestamp_label}),
+            data: JSON.stringify({ inventory: results, timestamp: timestamp_label,mice: mouseArray}),
             onload: function(response) {
                 if (debug == true) {
                     console.log('Inventory Submitted')
                 }
+                localStorage.setItem('ws.mh.invHx.dataLabel',"")
             },
             onerror: function(response) {
                 if (debug == true) {
@@ -122,10 +144,14 @@ function publishResults(results){
 function onInvHXOnClick(){
     $.confirm({
         title: 'MH: Inventory History',
-        content: 'Provide your web app link here. Only needed the first time unless you need to update it.' +
+        content: '' +
         '<form action="" class="formName">' +
         '<div class="form-group">' +
-        '<input type="text" placeholder="Paste Web App Link Here" class="webapp link" size="100" "/>' +
+        '<label>Custom Data Label</label>' +
+        '<input type="text" placeholder="Give this data a name (i.e Pre-GWH) so you can recognize it (optional)" class="inventory nickname" size="100" "/>' +
+        '<div width = "100"</div>' +
+        '<label>Paste your WebApp link here. Only needed the first time unless you need to update it.</label>' +
+        '<input type="text" placeholder="Paste WebApp Link Here" class="webapp link" size="100" "/>' +
         '</div>' +
         '</form>',
         boxWidth: '50%',
@@ -140,10 +166,13 @@ function onInvHXOnClick(){
                 btnClass: 'btn-blue',
                 action: function () {
                     const link = this.$content.find('.webapp.link').val();
+                    const dataLabel = this.$content.find('.inventory.nickname').val();
                     if (link) {
+                        localStorage.setItem('ws.mh.invHx.dataLabel',dataLabel)
                         localStorage.setItem('ws.mh.invHx.webApp',link)
                         getInvNow();
                     } else if (localStorage.getItem('ws.mh.invHx.webApp')) {
+                        localStorage.setItem('ws.mh.invHx.dataLabel',dataLabel)
                         getInvNow();
                     } else {
                         myAlert();
