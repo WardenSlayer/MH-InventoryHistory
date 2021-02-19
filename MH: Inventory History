@@ -2,8 +2,8 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      0.91
-// @description  Coming Soon
+// @version      1.0
+// @description  This script allows you to record your inventory and catch stats to be able to compare them over time.
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
 // @require      https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.js
@@ -74,9 +74,9 @@ function getHunts(itemsArray) {
         const wisdom = ['Wisdom',data[0].wisdom];
         let numFriendHorns = [];
         if(data[0].num_link_turns) {
-            numFriendHorns = ['Friend Horn',data[0].num_link_turns];
+            numFriendHorns = ['Friend Horns',data[0].num_link_turns];
         } else {
-            numFriendHorns = ['Friend Horn',data[0].num_total_turns-data[0].num_active_turns-data[0].num_passive_turns];
+            numFriendHorns = ['Friend Horns',data[0].num_total_turns-data[0].num_active_turns-data[0].num_passive_turns];
         }
         const numHunts = ['Total Hunts',data[0].num_total_turns];
         itemsArray.push(numHorns,numTrapChecks,numFriendHorns,numHunts,numClues,numDust,wisdom);
