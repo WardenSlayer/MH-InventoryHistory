@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      1.0
+// @version      1.0.1
 // @description  This script allows you to record your inventory and catch stats to be able to compare them over time.
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
@@ -21,7 +21,6 @@
 $(document).ready(function() {
     addTouchPoint()
 });
-
 
 function addTouchPoint() {
     if ($('.invHix').length == 0) {
@@ -66,7 +65,7 @@ function fetchInventory() {
 
 function getHunts(itemsArray) {
     let hunts = [];
-    hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_link_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted','wisdom'],function(data) {
+    hg.utils.User.getUserData([user.sn_user_id],['num_active_turns','num_passive_turns','num_link_turns','num_total_turns','map_num_clues_found','map_num_maps_dusted','wisdom','not_actually_real_field'],function(data) {
         const numClues = ['Map Clues',data[0].map_num_clues_found];
         const numDust = ['Maps Dusted',data[0].map_num_maps_dusted];
         const numHorns = ['Horn Calls',data[0].num_active_turns];
@@ -144,8 +143,8 @@ function publishResults(){
     const itemArray = localStorage.getItem('ws.mh.invHx');
     const mouseArray = localStorage.getItem('ws.mh.invHx.mice');
     if (debug == true) {
-        console.log('Inventory',itemArray)
-        console.log('Mice',mouseArray)
+        console.log('Inventory',itemArray);
+        console.log('Mice',mouseArray);
     }
     if (timestamp_label) {
     } else {
@@ -153,7 +152,7 @@ function publishResults(){
     }
     if (webAppURL){
         if (debug == true) {
-            console.log(webAppURL)
+            console.log(webAppURL);
         }
         GM_xmlhttpRequest({
             method: "POST",
