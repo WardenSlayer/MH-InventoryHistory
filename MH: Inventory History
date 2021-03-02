@@ -2,7 +2,7 @@
 // @name         MH: Inventory History
 // @author       Warden Slayer - Warden Slayer#2302
 // @namespace    https://greasyfork.org/en/users/227259-wardenslayer
-// @version      1.0.2
+// @version      1.0.3
 // @description  This script allows you to record your inventory and catch stats to be able to compare them over time.
 // @resource     YOUR_CSS https://cdnjs.cloudflare.com/ajax/libs/jquery-confirm/3.3.2/jquery-confirm.min.css
 // @require      https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.11.2/js/all.js
@@ -43,7 +43,6 @@ function addTouchPoint() {
 }
 
 function getInvNow() {
-    localStorage.setItem('ws.mh.invHx.dataLabel',"");
     localStorage.setItem('ws.mh.invHx',"");
     localStorage.setItem('ws.mh.invHx.mice',"");
     fetchInventory();
